@@ -24,8 +24,6 @@ const WANDER_MAX_DELAY = 95 * 1000;
 const IDLE_ANIM_MIN_DELAY = 12 * 1000;
 const IDLE_ANIM_MAX_DELAY = 38 * 1000;
 const PROACTIVE_CHECK_INTERVAL = 30 * 1000;
-const PROACTIVE_IDLE_THRESHOLD = 2 * 60 * 1000; // 静置 2 分钟就允许开口搭话
-const PROACTIVE_COOLDOWN = 4 * 60 * 1000; // 两次搭话之间至少间隔 4 分钟
 
 app.setAppUserModelId('com.deskmate.nibble');
 
@@ -597,6 +595,19 @@ function doIdleAnimation() {
 // 主动搭话
 // ---------------------------------------------------------------------------
 
+// 频率档位：idleMs=静置多久才允许开口；cooldownMs=两次搭话最小间隔；
+// probability=每次检查命中的概率；forceAfterMs=静置超过此值则强制开口（避免“一直不触发”）。
+const PROACTIVE_PROFILES = {
+  low:       { idleMs: 10 * 60 * 1000, cooldownMs: 20 * 60 * 1000, probability: 0.25, forceAfterMs: 30 * 60 * 1000 },
+  medium:    { idleMs: 3 * 60 * 1000,  cooldownMs: 10 * 60 * 1000, probability: 0.5,  forceAfterMs: 12 * 60 * 1000 },
+  high:      { idleMs: 60 * 1000,       cooldownMs: 5 * 60 * 1000,  probability: 0.8,  forceAfterMs: 4 * 60 * 1000 },
+  chatterbox: { idleMs: 30 * 1000,     cooldownMs: 2 * 60 * 1000,  probability: 0.9,  forceAfterMs: 90 * 1000 },
+};
+
+function getProactiveProfile(config) {
+  return PROACTIVE_PROFILES[config && config.proactiveFrequency] || PROACTIVE_PROFILES.medium;
+}
+
 function startProactiveLoop() {
   stopProactiveLoop();
   proactiveTimer = setInterval(checkProactive, PROACTIVE_CHECK_INTERVAL);
@@ -607,27 +618,55 @@ function stopProactiveLoop() {
   proactiveTimer = null;
 }
 
-async function checkProactive() {
+/**
+ * 真正“说一句主动搭话”。
+ * - force=true 时跳过静置/冷却门槛（用于设置里的“测试”按钮）。
+ * - ignoreGate=true 时连“是否开启”和“安静时段”也忽略（纯测试管道用）。
+ * 其余情况遵守：是否开启、安静时段、频率档位的静置/冷却/概率。
+ *
+ * 预设台词（未接入 AI 时）始终可用：proactiveUseAi 关闭或未配 Key 一律用内置台词；
+ * 即使接入了 AI，生成失败也会回退预设，保证一定有话说。
+ */
+async function speakProactiveLine({ force = false, ignoreGate = false } = {}) {
   const config = store.getConfig();
-  if (!config.proactiveEnabled) return;
-  if (!petWindow || !petWindow.isVisible()) return;
+  if (!ignoreGate && !config.proactiveEnabled) return null;
 
-  const now = Date.now();
   const hour = new Date().getHours();
-  if (isWithinQuietHours(hour, config.quietHoursStart, config.quietHoursEnd)) return;
+  if (!ignoreGate && isWithinQuietHours(hour, config.quietHoursStart, config.quietHoursEnd)) return null;
 
-  const idleMs = now - store.getLastInteraction();
-  const cooldownOk = now - lastProactiveAt > PROACTIVE_COOLDOWN;
-  if (idleMs > PROACTIVE_IDLE_THRESHOLD && cooldownOk && Math.random() < 0.7) {
-    lastProactiveAt = now;
-    let line = '';
-    // 只有在显式打开“主动搭话使用 AI”且配置了 Key 时才消耗 token，否则只说内置台词
-    if (config.proactiveUseAi && config.apiKey) {
+  if (!force) {
+    const profile = getProactiveProfile(config);
+    const idleMs = Date.now() - store.getLastInteraction();
+    const cooldownOk = Date.now() - lastProactiveAt > profile.cooldownMs;
+    if (idleMs < profile.idleMs || !cooldownOk) return null;
+    // 静置超过 forceAfterMs 则无论概率如何都开口，确保长时间不操作也一定会搭话
+    const mustFire = idleMs > profile.forceAfterMs;
+    if (!mustFire && Math.random() > profile.probability) return null;
+  }
+
+  lastProactiveAt = Date.now();
+  let line = '';
+  if (config.proactiveUseAi && config.apiKey) {
+    try {
       line = await generateAiProactiveLine(config, hour);
+    } catch (err) {
+      console.error('[main] AI 主动搭话生成失败，回退预设台词：', err.message);
+      line = '';
     }
-    if (!line) line = getProactiveLine(hour);
-    store.addMessage('assistant', line);
-    announce(line, { emotion: 'idle-thought' });
+  }
+  if (!line) line = getProactiveLine(hour);
+  if (!line) return null;
+
+  store.addMessage('assistant', line);
+  announce(line, { emotion: 'idle-thought' });
+  return line;
+}
+
+async function checkProactive() {
+  try {
+    await speakProactiveLine({ force: false });
+  } catch (err) {
+    console.error('[main] 主动搭话检查出错：', err.message);
   }
 }
 
@@ -716,6 +755,12 @@ function registerIpcHandlers() {
     store.resetAffection();
     broadcastAffection(0);
     return 0;
+  });
+
+  // 设置面板里的“测试主动搭话”：忽略开启/安静时段门槛，强制说一句（用于验证管道是否通顺）
+  ipcMain.handle('proactive:trigger', async () => {
+    const line = await speakProactiveLine({ force: true, ignoreGate: true });
+    return { ok: Boolean(line), line: line || '' };
   });
 
   ipcMain.on('pet:contextmenu', (event) => {

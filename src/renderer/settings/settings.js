@@ -10,6 +10,9 @@
   const proactiveEnabledInput = el('proactiveEnabled');
   const proactiveUseAiInput = el('proactiveUseAi');
   const proactiveAiRow = el('proactiveAiRow');
+  const proactiveFrequencyInput = el('proactiveFrequency');
+  const proactiveTestBtn = el('proactiveTestBtn');
+  const proactiveTestResult = el('proactiveTestResult');
   const soundEnabledInput = el('soundEnabled');
   const quietHoursStartSelect = el('quietHoursStart');
   const quietHoursEndSelect = el('quietHoursEnd');
@@ -160,6 +163,7 @@
     autoLaunchInput.checked = Boolean(config.autoLaunch);
     wanderEnabledInput.checked = config.wanderEnabled !== false;
     proactiveEnabledInput.checked = config.proactiveEnabled !== false;
+    proactiveFrequencyInput.value = config.proactiveFrequency || 'medium';
     soundEnabledInput.checked = config.soundEnabled !== false;
     quietHoursStartSelect.value = String(config.quietHoursStart != null ? config.quietHoursStart : 23);
     quietHoursEndSelect.value = String(config.quietHoursEnd != null ? config.quietHoursEnd : 7);
@@ -197,6 +201,7 @@
       autoLaunch: autoLaunchInput.checked,
       wanderEnabled: wanderEnabledInput.checked,
       proactiveEnabled: proactiveEnabledInput.checked,
+      proactiveFrequency: proactiveFrequencyInput.value,
       soundEnabled: soundEnabledInput.checked,
       quietHoursStart: parseInt(quietHoursStartSelect.value, 10),
       quietHoursEnd: parseInt(quietHoursEndSelect.value, 10),
@@ -291,6 +296,27 @@
     if (!confirmed) return;
     await window.api.clearChatHistory();
     testResult.textContent = '';
+  });
+
+  proactiveTestBtn.addEventListener('click', async () => {
+    proactiveTestResult.textContent = '正在触发…';
+    proactiveTestResult.className = 'test-result';
+    proactiveTestBtn.disabled = true;
+    try {
+      const res = await window.api.triggerProactive();
+      if (res && res.ok) {
+        proactiveTestResult.textContent = `已搭话：${res.line}`;
+        proactiveTestResult.className = 'test-result ok';
+      } else {
+        proactiveTestResult.textContent = '未触发（请先开启“主动搭话”）';
+        proactiveTestResult.className = 'test-result error';
+      }
+    } catch (err) {
+      proactiveTestResult.textContent = `失败：${err.message || err}`;
+      proactiveTestResult.className = 'test-result error';
+    } finally {
+      proactiveTestBtn.disabled = false;
+    }
   });
 
   let saveStatusTimer = null;

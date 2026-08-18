@@ -36,6 +36,73 @@
 
 **N1 作为基线，后续所有节点都不得破坏其"开箱即用、无需 API Key 也能玩"的产品定位。**
 
+### 1.1 N1 视觉能力优化（扩展计划）
+
+> 方向确认：摄像头两种模式都要、分期实现（先视频通话式、后自主抓拍）；视觉兜底采用**友好拦截提示**（不引入独立视觉端点）。
+> 纯文本模型（DeepSeek 等）无法看图时，系统在发送前拦截并提示用户切换视觉模型，绝不裸崩。
+
+#### 设计原则
+- **能力矩阵（设置可开关）**：聊天图片输入 / 摄像头视频通话 / 自主定时抓拍，三者相互独立可组合。
+- **兜底优先，绝不裸崩**：任何视觉能力在"模型不支持 / 未授权 / 请求失败"时只给友好提示，不抛异常、不中断聊天。
+- **纯文本模型友好拦截**：由用户声明 `modelSupportsVision` 开关；关闭时一切图片/摄像头输入在发送前被拦截。
+- **隐私**：摄像头画面仅在用户开启后、按"发送/抓拍"动作才上传到已配置的 AI 端点，本地不出本机。
+
+#### 配置项（store.js DEFAULT_CONFIG 新增）
+```js
+visionEnabled: false,        // 视觉总开关
+modelSupportsVision: false,  // 当前主模型是否支持看图（驱动兜底拦截）
+chatImageEnabled: true,      // 聊天内图片输入（拖拽/粘贴/按钮），受 visionEnabled 约束
+webcamEnabled: false,        // 摄像头总开关
+webcamMode: 'off',           // 'off' | 'call'（视频通话）| 'autonomous'（自主抓拍）
+webcamSnapshotInterval: 60,  // 自主抓拍间隔（秒）
+```
+
+#### 视觉兜底策略
+| 场景 | 行为 |
+|---|---|
+| `visionEnabled=false` | 隐藏所有图片/摄像头 UI，输入被忽略 |
+| `visionEnabled=true` 但 `modelSupportsVision=false` | 附图/开摄像头时**拦截并提示**："当前模型（如 DeepSeek）是纯文本模型，无法看图。请到设置打开「模型支持看图」并切换到视觉模型（GPT-4o / Qwen-VL / GLM-4V）后再试。" 绝不发请求 |
+| 模型支持视觉但请求报错 | 走现有聊天错误通道，并附"若模型实际不支持图片，可关闭「模型支持看图」" |
+| 摄像头权限被拒 | 类似麦克风，提示检查系统隐私设置 |
+| 发送成功但模型返回非图片相关错误 | 友好提示，对话不崩 |
+
+#### 消息协议扩展
+- `chatCompletion` 支持某条 `messages` 的 `content` 为数组 `[{type:'text',text}, {type:'image_url',image_url:{url:'data:image/jpeg;base64,...'}}]`，纯文本 `content:string` 向后兼容。
+- `window.api.sendChatMessage(text, images?)`：`images` 为 base64 data URL 数组（可选）。
+- 主进程 `chat:send` 与 `handleChatSend`：若 `images?.length` 且 `modelSupportsVision` → 用户消息转多模态；**历史记录只存文本**（不持久化图片字节，避免 `nibble-data.json` 膨胀）。
+- 系统提示词追加："当用户发送图片时，用简短中文描述/回应所看到的内容"。
+
+#### 分期实现
+**V1 — 聊天图片输入（最小闭环，优先做）**
+- 目标：聊天窗口可附图对话；纯文本模型被友好拦截。
+- 改动：`chat/index.html` 加图片按钮 + 隐藏 file input + 预览条，`messages` 区支持拖拽 `dragover/drop`，输入框支持 `paste` 粘贴图片；`chat/chat.js` 维护 `pendingImages[]`，发送时 `sendChatMessage(text, pendingImages)`；`main.js` `chat:send` 接收 images、`handleChatSend` 组装多模态（受 `modelSupportsVision` 拦截）；`llm.js` 支持 image_url；`settings` 加"视觉"卡片（总开关 + `modelSupportsVision` + 说明）。
+- 验证：关视觉总开关→无 UI；开了但 `modelSupportsVision` 关→附图友好提示；用支持视觉的模型（如 GPT-4o）→能看图回复。
+
+**V2 — 摄像头视频通话式（聊天时开）**
+- 目标：聊天中点"📷 开摄像头"，桌宠像视频通话一样持续"看"你并反应。
+- 改动：`chat/index.html` 加摄像头开关按钮 + 小预览 `<video>`；`chat/chat.js` 复用现有 `getUserMedia`（已有麦克风逻辑），开摄像头时 `getUserMedia({video:true})`，定时（如每 3s）抓帧 `canvas.toDataURL` 作为最新帧，持续模式下每帧间隔自动发一条"你看到了什么/怎么回应"的视觉提问，结果以 nibble 消息追加（非用户输入）；受 `webcamEnabled` + `modelSupportsVision` 拦截；权限拒绝走友好提示；关闭时停流、停定时器。
+- 验证：开摄像头→预览出现；模型不支持→拦截提示；支持→每隔几秒桌宠基于画面说一句。
+
+**V3 — 自主定时抓拍（桌宠主动看）**
+- 目标：桌宠不聊天时也定期看屏幕前的人/环境，主动搭话（强化"自主桌宠"）。
+- 改动：`pet.js` 当 `webcamMode==='autonomous'` 且窗口可见、非安静时段、近期无交互时，后台 `getUserMedia({video:true})` 抓帧，经新 IPC `pet:capture-frame` 把 base64 发给主进程（主进程不直连摄像头，遵循 Electron 沙箱边界）；`main.js` 新增 `startAutonomousVisionLoop()`，按 `webcamSnapshotInterval` 触发，收到帧后用视觉提示词调 `chatCompletion`（仅当 `modelSupportsVision`），结果经 `announce` 主动气泡展示；与现有 `startProactiveLoop`（文字搭话）并列互不冲突。
+- 验证：开自主模式静置→桌宠周期性基于画面主动搭话；关模型支持→静默不报错；隐藏窗口→暂停。
+
+#### 隐私与安全
+- 摄像头仅用户显式开启 + 主动/定时动作时取帧；停止即 `track.stop()`。
+- 画面只发往用户已配置的 AI 端点；本地优先原则保留（未来 N2 可接本地视觉模型做完全离线）。
+- 设置文案："开启后，摄像头画面会发送到你配置的 AI 服务进行分析"。
+
+#### 测试与验证（每阶段）
+- `node --check` 全过；聊天发送图片走 mock IPC 验证多模态消息组装。
+- 降级回归：①视觉总开关关→无 UI；②`modelSupportsVision` 关→附图/开摄像头均友好拦截、无请求；③模拟 API 报错→聊天不崩、有提示；④摄像头权限拒→提示。
+- 手动：用支持视觉的模型（如填入 GPT-4o key）跑通 V1→V2→V3 端到端。
+
+#### 不在本次范围
+- 独立视觉模型端点（已选"仅友好拦截"，故不接 `visionBaseUrl`）。
+- 屏幕截图感知（未来可独立加，复用到 V3 抓帧→分析管道）。
+- 本地离线视觉模型（属 N2 后端能力）。
+
 ---
 
 ## 2. 最终目标架构（混合栈）

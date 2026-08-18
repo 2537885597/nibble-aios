@@ -20,6 +20,7 @@ const DEFAULT_CONFIG = {
   wanderEnabled: true,
   proactiveEnabled: true,
   proactiveUseAi: false,
+  proactiveFrequency: 'medium', // 'low' | 'medium' | 'high'
   soundEnabled: true,
   quietHoursStart: 23,
   quietHoursEnd: 7,

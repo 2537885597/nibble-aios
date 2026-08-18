@@ -54,12 +54,25 @@
           </label>
         </div>
         <div class="field">
+          <label for="proactiveFrequency">主动搭话频率</label>
+          <select id="proactiveFrequency">
+            <option value="low">低频（静置约 10 分钟开口，约每 20 分钟一次）</option>
+            <option value="medium">中频（静置约 3 分钟开口，约每 10 分钟一次）</option>
+            <option value="high">高频（静置约 1 分钟开口，约每 5 分钟一次）</option>
+            <option value="chatterbox">话痨（静置约 30 秒开口，约每 2 分钟一次）</option>
+          </select>
+        </div>
+        <div class="field">
           <label>安静时段（此时段内不会主动搭话）</label>
           <div class="quiet-hours">
             <select id="quietHoursStart"></select>
             <span>至</span>
             <select id="quietHoursEnd"></select>
           </div>
+        </div>
+        <div class="field row">
+          <button type="button" id="proactiveTestBtn" class="ghost-btn">测试主动搭话</button>
+          <span id="proactiveTestResult" class="test-result"></span>
         </div>
       </section>
 

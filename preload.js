@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('api', {
   resetAffection: () => ipcRenderer.invoke('pet:resetAffection'),
   getAffection: () => ipcRenderer.invoke('pet:getAffection'),
   getAffectionInfo: () => ipcRenderer.invoke('pet:affectionInfo'),
+  triggerProactive: () => ipcRenderer.invoke('proactive:trigger'),
 
   // ---------- 语音识别 ----------
   transcribeAudio: (audioBase64, mimeType) => ipcRenderer.invoke('asr:transcribe', { audioBase64, mimeType }),
