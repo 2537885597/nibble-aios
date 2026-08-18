@@ -1,0 +1,314 @@
+/* ============================================================
+   Nibble 桌面宠物 - 使用原图位图渲染 + CSS 动画
+   状态：idle / walking / hopping / reacting / sleeping / talking
+   ============================================================ */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+/* ================== 舞台 ================== */
+
+#stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#character-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 80%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  cursor: none;
+}
+
+#character-rig {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#character-img {
+  height: 100%;
+  width: auto;
+  display: block;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 6px 10px rgba(60, 45, 30, 0.22));
+}
+
+#character-wrap.facing-left #character-rig {
+  transform: scaleX(-1);
+}
+
+#character-wrap.hovering #character-rig {
+  transform: translateY(-2.5%);
+}
+#character-wrap.hovering.facing-left #character-rig {
+  transform: scaleX(-1) translateY(-2.5%);
+}
+
+/* ================== 悬停小手 ================== */
+
+#hover-hint {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%) scale(0.6);
+  font-size: 22px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  filter: drop-shadow(0 2px 3px rgba(60, 45, 30, 0.35));
+  z-index: 5;
+}
+#hover-hint.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  animation: hoverHintWiggle 1.4s ease-in-out infinite;
+}
+@keyframes hoverHintWiggle {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+  25% { transform: translate(-50%, -55%) rotate(-12deg) scale(1.08); }
+  50% { transform: translate(-50%, -46%) rotate(0deg) scale(1); }
+  75% { transform: translate(-50%, -55%) rotate(8deg) scale(1.05); }
+}
+
+/* ============================================================
+   状态：idle（待机）
+   - 全身轻微呼吸
+   ============================================================ */
+
+@keyframes imgBreathe {
+  0%, 100% { transform: scale(1, 1) translateY(0); }
+  50% { transform: scale(1.015, 0.985) translateY(-1.5%); }
+}
+.state-idle #character-img {
+  transform-origin: 50% 100%;
+  animation: imgBreathe 3.4s ease-in-out infinite;
+}
+
+/* ============================================================
+    状态：walking（侧面来回走动）
+    - 因为目前只有正面位图，用“收窄身形 + 前倾 + 左右小幅踏步”来
+      暗示它转成了侧面在走路；左右朝向由 #character-rig 的 scaleX(-1) 控制
+    - 完整周期：抬左脚 → 落 → 抬右脚 → 落
+    ============================================================ */
+
+@keyframes imgWalk {
+   0%   { transform: translateY(0)    rotate(0deg)  scaleX(0.88); }
+   20%  { transform: translateY(-7%)  rotate(-3deg) scaleX(0.84); } /* 抬左脚，前倾 */
+   40%  { transform: translateY(0)    rotate(0deg)  scaleX(0.88); }
+   60%  { transform: translateY(-7%)  rotate(3deg)  scaleX(0.84); } /* 抬右脚，后仰 */
+   80%  { transform: translateY(0)    rotate(0deg)  scaleX(0.88); }
+   100% { transform: translateY(0)    rotate(0deg)  scaleX(0.88); }
+}
+.state-walking #character-img {
+  transform-origin: 50% 100%;
+  animation: imgWalk 0.62s ease-in-out infinite;
+}
+
+/* ============================================================
+   状态：reacting（摸摸头 - 挤压反弹）
+   ============================================================ */
+
+@keyframes imgSquash {
+  0% { transform: scale(1, 1); }
+  15% { transform: scale(1.06, 0.92); }
+  35% { transform: scale(0.94, 1.08); }
+  55% { transform: scale(1.04, 0.96); }
+  75% { transform: scale(0.98, 1.02); }
+  100% { transform: scale(1, 1); }
+}
+.state-reacting #character-img {
+  transform-origin: 50% 100%;
+  animation: imgSquash 0.8s ease-out 1;
+}
+
+/* ============================================================
+   状态：sleeping（睡觉）
+   - 身体缓慢下沉
+   ============================================================ */
+
+@keyframes imgSleep {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(2%) scale(0.99); }
+}
+.state-sleeping #character-img {
+  transform-origin: 50% 100%;
+  animation: imgSleep 4s ease-in-out infinite;
+}
+
+/* ============================================================
+   状态：talking（说话）
+   - 头部轻微点动
+   ============================================================ */
+
+@keyframes imgTalk {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-1%) rotate(-1deg); }
+  75% { transform: translateY(-1%) rotate(1deg); }
+}
+.state-talking #character-img {
+  transform-origin: 50% 100%;
+  animation: imgTalk 0.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   状态：hopping（原地跳跃）
+   ============================================================ */
+
+@keyframes imgHopHigh {
+  0%, 100% { transform: translateY(0) scaleY(1) scaleX(1); }
+  10% { transform: translateY(0) scaleY(0.88) scaleX(1.06); /* 蓄力 */ }
+  40% { transform: translateY(-32%) scaleY(1.16) scaleX(0.94); /* 腾空 */ }
+  60% { transform: translateY(-32%) scaleY(1.16) scaleX(0.94); }
+  90% { transform: translateY(0) scaleY(0.88) scaleX(1.06); /* 落地 */ }
+  100% { transform: translateY(0) scaleY(1) scaleX(1); }
+}
+.state-hopping #character-img {
+  transform-origin: 50% 100%;
+  animation: imgHopHigh 0.55s ease-in-out infinite;
+}
+
+/* ============================================================
+   状态：sitting（坐下休息）
+   ============================================================ */
+
+@keyframes imgSitDown {
+  0% { transform: translateY(0) scale(1, 1) rotate(0deg); }
+  40% { transform: translateY(20%) scale(1.06, 0.74) rotate(-2deg); }
+  70% { transform: translateY(20%) scale(1.06, 0.74) rotate(2deg); }
+  100% { transform: translateY(20%) scale(1.06, 0.74) rotate(0deg); }
+}
+.state-sitting #character-img {
+  transform-origin: 50% 100%;
+  animation: imgSitDown 0.8s ease-out forwards;
+}
+
+/* ============================================================
+   气泡
+   ============================================================ */
+
+#bubble {
+  position: absolute;
+  left: 50%;
+  bottom: 64%;
+  transform: translate(-50%, 12px) scale(0.85);
+  /* 用百分比宽度，避免窗口缩放后气泡宽于窗口被裁掉；
+     同时限制最大高度，超长文本在气泡内滚动，不会被窗口边缘截断 */
+  max-width: 92%;
+  max-height: 34%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 60px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1.5px solid #efe6d8;
+  border-radius: 18px;
+  box-shadow: 0 6px 18px rgba(60, 45, 30, 0.22);
+  font-size: 14px;
+  line-height: 1.5;
+  color: #4a3f36;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: center;
+  word-break: break-word;
+  box-sizing: border-box;
+  backdrop-filter: blur(6px);
+  z-index: 10;
+}
+#bubble-text {
+  display: block;
+  width: 100%;
+}
+#bubble::-webkit-scrollbar {
+  width: 5px;
+}
+#bubble::-webkit-scrollbar-thumb {
+  background: #e6d6b6;
+  border-radius: 3px;
+}
+#bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  transform: translateX(-50%);
+  border-width: 8px 7px 0 7px;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.96) transparent transparent transparent;
+  filter: drop-shadow(0 1px 0 #efe6d8);
+}
+#bubble.visible {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+#bubble.hidden {
+  opacity: 0;
+}
+
+/* ============================================================
+   爱心 / Zzz 漂浮
+   ============================================================ */
+
+#hearts-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.floating-heart {
+  position: absolute;
+  top: 28%;
+  color: #f08fa0;
+  font-size: 20px;
+  animation: floatHeart 1.4s ease-out forwards;
+  filter: drop-shadow(0 2px 4px rgba(240, 143, 160, 0.4));
+}
+@keyframes floatHeart {
+  0% { opacity: 0; transform: translateY(0) scale(0.5) rotate(0deg); }
+  20% { opacity: 1; transform: translateY(-8px) scale(1.1) rotate(-8deg); }
+  60% { opacity: 0.9; transform: translateY(-32px) scale(1) rotate(5deg); }
+  100% { opacity: 0; transform: translateY(-58px) scale(0.7) rotate(-3deg); }
+}
+.floating-zzz {
+  position: absolute;
+  top: 14%;
+  color: #9aa7c7;
+  font-weight: 700;
+  font-size: 18px;
+  animation: floatZzz 3s ease-in forwards;
+  filter: drop-shadow(0 1px 2px rgba(154, 167, 199, 0.4));
+}
+@keyframes floatZzz {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.7); }
+  15% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(18px, -52px) scale(1.25) rotate(8deg); }
+}
+
+/* ============================================================
+   性能：will-change 提示
+   ============================================================ */
+
+#character-rig,
+#character-img {
+  will-change: transform;
+}

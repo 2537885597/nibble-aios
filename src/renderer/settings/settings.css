@@ -1,0 +1,228 @@
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #fbf7f0;
+  color: #4a3f36;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+#scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px 8px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #f0e6d6;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 14.5px;
+  color: #5a4a38;
+  font-weight: 700;
+  border-left: 4px solid #f3c96b;
+  padding-left: 8px;
+}
+
+.tip {
+  font-size: 12px;
+  color: #a08b6f;
+  line-height: 1.6;
+  margin: 0 0 12px;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.field > label {
+  display: block;
+  font-size: 12.5px;
+  color: #7a6a55;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.hint-inline {
+  font-weight: 400;
+  color: #b5a385;
+  font-size: 12px;
+}
+
+input[type="text"],
+input[type="password"],
+textarea,
+select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1.5px solid #ecdfc4;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fffdf8;
+  color: #4a3f36;
+  outline: none;
+}
+input[type="text"]:focus,
+input[type="password"]:focus,
+textarea:focus,
+select:focus {
+  border-color: #f3c96b;
+}
+
+textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: #f3c96b;
+}
+
+.field.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.switch-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #4a3f36;
+  cursor: pointer;
+}
+.switch-label input {
+  accent-color: #f3c96b;
+  width: 15px;
+  height: 15px;
+}
+
+.quiet-hours {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.quiet-hours select {
+  flex: 1;
+}
+
+.input-with-btn {
+  display: flex;
+  gap: 8px;
+}
+.input-with-btn input {
+  flex: 1;
+}
+
+.ghost-btn {
+  border: 1.5px solid #ecdfc4;
+  background: #fffdf8;
+  color: #7a6a55;
+  padding: 7px 12px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ghost-btn:hover {
+  background: #fbf1da;
+  border-color: #f3c96b;
+}
+
+.secondary-btn {
+  border: none;
+  background: #f3e6c8;
+  color: #6a5228;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.secondary-btn:hover {
+  background: #efdbab;
+}
+
+.test-row {
+  align-items: center;
+}
+.test-result {
+  font-size: 12.5px;
+}
+.test-result.ok { color: #4c8c5c; }
+.test-result.error { color: #c46a56; }
+
+.about-card p {
+  margin: 4px 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 18px;
+  border-top: 1px solid #f0e2c8;
+  background: #fffaf1;
+}
+
+#saveStatus {
+  font-size: 12.5px;
+  color: #4c8c5c;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+#saveStatus.visible {
+  opacity: 1;
+}
+
+.primary-btn {
+  border: none;
+  background: #f3c96b;
+  color: #5a4322;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 10px 22px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.primary-btn:hover {
+  background: #f0be4d;
+}
+
+#scroll-area::-webkit-scrollbar {
+  width: 8px;
+}
+#scroll-area::-webkit-scrollbar-thumb {
+  background: #eddcb9;
+  border-radius: 4px;
+}
+#scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}

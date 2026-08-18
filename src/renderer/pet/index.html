@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; media-src 'self' blob: data:;" />
+<title>Nibble</title>
+<link rel="stylesheet" href="pet.css" />
+</head>
+<body>
+  <div id="stage">
+    <div id="bubble" class="hidden"><span id="bubble-text"></span></div>
+    <div id="hearts-layer"></div>
+    <div id="hover-hint">🖐️</div>
+
+    <div id="character-wrap" class="state-idle facing-right">
+      <!-- 桌宠直接使用处理后的原图位图渲染，保留 CSS 状态动画 -->
+      <div id="character-rig">
+        <img id="character-img" src="../../../assets/character.png" alt="Nibble" draggable="false" decoding="async" />
+      </div>
+    </div>
+  </div>
+
+  <script src="pet.js"></script>
+</body>
+</html>

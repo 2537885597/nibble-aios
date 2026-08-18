@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; media-src 'self' blob: data:;" />
+<title>聊天</title>
+<link rel="stylesheet" href="chat.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="chat-header">
+      <div id="pet-avatar">🐰</div>
+      <div id="header-text">
+        <div id="pet-name">Nibble</div>
+        <div id="affection-label">好感度 0 · 陌生</div>
+      </div>
+      <button id="clear-btn" title="清空聊天记录">清空</button>
+    </header>
+    <main id="messages"></main>
+    <footer id="composer">
+      <button id="mic-btn" title="语音输入">&#x1F3A4;</button>
+      <textarea id="input" placeholder="跟它说点什么…（Enter 发送，Shift+Enter 换行）" rows="1"></textarea>
+      <button id="send-btn">发送</button>
+    </footer>
+  </div>
+  <script src="chat.js"></script>
+</body>
+</html>

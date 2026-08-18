@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;" />
+<title>设置</title>
+<link rel="stylesheet" href="settings.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="scroll-area">
+      <section class="card">
+        <h2>基本设置</h2>
+        <div class="field">
+          <label for="petName">宠物昵称</label>
+          <input type="text" id="petName" maxlength="12" placeholder="Nibble" />
+        </div>
+        <div class="field">
+          <label for="scale">窗口大小 <span id="scaleValue" class="hint-inline">100%</span></label>
+          <input type="range" id="scale" min="0.2" max="2.0" step="0.05" />
+        </div>
+        <div class="field row">
+          <label class="switch-label" for="alwaysOnTop">
+            <input type="checkbox" id="alwaysOnTop" />
+            <span>窗口置顶</span>
+          </label>
+          <label class="switch-label" for="autoLaunch">
+            <input type="checkbox" id="autoLaunch" />
+            <span>开机自动启动</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>互动设置</h2>
+        <div class="field row">
+          <label class="switch-label" for="wanderEnabled">
+            <input type="checkbox" id="wanderEnabled" />
+            <span>自由走动</span>
+          </label>
+          <label class="switch-label" for="proactiveEnabled">
+            <input type="checkbox" id="proactiveEnabled" />
+            <span>主动搭话</span>
+          </label>
+          <label class="switch-label" for="soundEnabled">
+            <input type="checkbox" id="soundEnabled" />
+            <span>互动音效</span>
+          </label>
+        </div>
+        <div class="field row" id="proactiveAiRow">
+          <label class="switch-label" for="proactiveUseAi">
+            <input type="checkbox" id="proactiveUseAi" />
+            <span>主动搭话使用 AI 生成（消耗 token）</span>
+          </label>
+        </div>
+        <div class="field">
+          <label>安静时段（此时段内不会主动搭话）</label>
+          <div class="quiet-hours">
+            <select id="quietHoursStart"></select>
+            <span>至</span>
+            <select id="quietHoursEnd"></select>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>AI 服务</h2>
+        <p class="tip">支持任何 OpenAI 兼容接口，例如 DeepSeek、Moonshot、通义千问、OpenAI 官方等。不填写也可以用，只是只能用内置的简单罐头回复。</p>
+        <div class="field">
+          <label for="baseUrl">API 地址</label>
+          <input type="text" id="baseUrl" placeholder="https://api.deepseek.com/v1" />
+        </div>
+        <div class="field">
+          <label for="apiKey">API Key</label>
+          <div class="input-with-btn">
+            <input type="password" id="apiKey" placeholder="sk-..." />
+            <button type="button" id="toggleKeyBtn" class="ghost-btn">显示</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="model">模型名称</label>
+          <input type="text" id="model" placeholder="deepseek-chat" />
+        </div>
+        <div class="field">
+          <label for="personality">人设 / 系统提示词</label>
+          <textarea id="personality" rows="10"></textarea>
+        </div>
+        <div class="field row test-row">
+          <button type="button" id="testBtn" class="secondary-btn">测试连接</button>
+          <span id="testResult" class="test-result"></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>语音</h2>
+        <p class="tip">语音播报（TTS）默认使用微软 Edge TTS（云端、中文音色自然、免费）。语音识别（ASR）使用 OpenAI 兼容的 Whisper 接口（支持 OpenAI 官方 / Faster Whisper / Groq Whisper 等）。</p>
+        <div class="field">
+          <label for="ttsEngine">TTS 引擎</label>
+          <select id="ttsEngine">
+            <option value="edge">微软 Edge TTS（推荐，云端自然音色）</option>
+            <option value="webspeech">系统自带 Web Speech（离线，免配置）</option>
+          </select>
+        </div>
+        <div id="ttsEdgeFields">
+          <div class="field">
+            <label for="ttsEdgeVoice">Edge TTS 音色</label>
+            <select id="ttsEdgeVoice"></select>
+          </div>
+          <div class="field">
+            <label for="ttsPitch">音调 <span id="ttsPitchValue" class="hint-inline">+0Hz</span></label>
+            <input type="range" id="ttsPitch" min="-50" max="50" step="1" />
+          </div>
+          <div class="field">
+            <label for="ttsVolume">音量 <span id="ttsVolumeValue" class="hint-inline">100%</span></label>
+            <input type="range" id="ttsVolume" min="0" max="1" step="0.05" />
+          </div>
+        </div>
+        <div id="ttsWebSpeechFields" class="hidden">
+          <div class="field">
+            <label for="ttsVoice">系统发音人</label>
+            <div class="input-with-btn">
+              <select id="ttsVoice"><option value="">自动选择中文语音</option></select>
+              <button type="button" id="ttsPreviewBtn" class="ghost-btn">试听</button>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="ttsRate">语速 <span id="ttsRateValue" class="hint-inline">1.0x</span></label>
+          <input type="range" id="ttsRate" min="0.5" max="2.0" step="0.1" />
+        </div>
+        <div class="field row">
+          <label class="switch-label" for="ttsEnabled">
+            <input type="checkbox" id="ttsEnabled" />
+            <span>启用语音播报</span>
+          </label>
+        </div>
+        <div class="field row">
+          <label class="switch-label" for="asrUseCustom">
+            <input type="checkbox" id="asrUseCustom" />
+            <span>语音识别使用单独的服务地址</span>
+          </label>
+        </div>
+        <div id="asrCustomFields">
+          <div class="field">
+            <label for="asrBaseUrl">语音识别 API 地址</label>
+            <input type="text" id="asrBaseUrl" placeholder="https://api.openai.com/v1" />
+          </div>
+          <div class="field">
+            <label for="asrApiKey">语音识别 API Key</label>
+            <input type="password" id="asrApiKey" placeholder="sk-..." />
+          </div>
+          <div class="field">
+            <label for="asrModel">语音识别模型名称</label>
+            <input type="text" id="asrModel" placeholder="whisper-1" />
+          </div>
+        </div>
+        <p class="tip" id="asrDefaultHint">不勾选则默认使用上方“AI 服务”的地址和密钥。</p>
+      </section>
+
+      <section class="card">
+        <h2>数据管理</h2>
+        <div class="field row">
+          <span id="affectionInfo" class="hint-inline">好感度 0 · 陌生</span>
+          <button type="button" id="resetAffectionBtn" class="ghost-btn">重置好感度</button>
+          <button type="button" id="clearHistoryBtn" class="ghost-btn">清空聊天记录</button>
+        </div>
+      </section>
+
+      <section class="card about-card">
+        <h2>关于</h2>
+        <p class="tip">Nibble 桌宠 · 版本 <span id="version">-</span></p>
+        <p class="tip">灵感来自一只用扭扭棒和毛线手工制作的小人偶，希望它能一直陪着你。</p>
+      </section>
+    </div>
+
+    <footer id="footer">
+      <span id="saveStatus"></span>
+      <button type="button" id="saveBtn" class="primary-btn">保存设置</button>
+    </footer>
+  </div>
+  <script src="settings.js"></script>
+</body>
+</html>
